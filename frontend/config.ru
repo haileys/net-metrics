@@ -2,6 +2,7 @@ require "rack/static"
 require "erb"
 require "mysql2"
 require "yaml"
+require "json"
 
 config = YAML.load_file(File.expand_path("config.yml", __dir__))
 $db = Mysql2::Client.new(config["mysql"])
