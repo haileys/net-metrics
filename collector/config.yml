@@ -2,7 +2,9 @@ mysql:
   host: localhost
   username: root
   database: net_metrics
-ping_hosts:
-  - google.com
-  - github.com
-  - charlie.bz
+ping:
+  interval: 10
+  hosts:
+    - google.com
+    - github.com
+    - charlie.bz
