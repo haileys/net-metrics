@@ -7,4 +7,7 @@
 #
 set -ex
 
-echo "hello!"
+(
+    cd collector
+    bundle --local
+)
