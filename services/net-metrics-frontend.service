@@ -1,0 +1,10 @@
+[Unit]
+Description=net-metrics-frontend
+After=network.target
+
+[Service]
+User=nobody
+Group=nobody
+Type=simple
+ExecStart=/opt/net-metrics/checkout/frontend/run.sh
+ExecStop=/usr/bin/kill -9 $MAINPID
