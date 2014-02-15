@@ -5,7 +5,8 @@ mysql:
 ping:
   interval: 10
   hosts:
-    - google.com
-    - github.com
     - charlie.bz
     - charlie.su
+    - github.com
+    - google.com
+    - ruby-lang.org
