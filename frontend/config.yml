@@ -1,5 +1,4 @@
 mysql:
-  host: 127.0.0.1
-  port: 1337 # ssh port forwarding
+  host: localhost
   username: root
   database: net_metrics
