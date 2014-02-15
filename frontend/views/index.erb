@@ -20,54 +20,40 @@
 <body>
   <div id="chart"><svg></svg></div>
 </body>
-<script id="data"><%= results.to_a.to_json %></script>
 <script>
-  function analyzeRawData() {
-    var hosts = {};
-    var rawData = JSON.parse(document.getElementById("data").innerText);
+(function() {
+  var rawData = (<%= results.to_a.to_json %>).map(function(row) {
+    return { host: row[0], timestamp: +new Date(row[1]), latency: row[2] };
+  });
 
-    var maxLatency, minTimestamp, maxTimestamp;
+  var maxLatency = Math.max.apply(Math, rawData.map(function(row) {
+    return row.latency;
+  }));
 
-    rawData.forEach(function(row) {
-      var host = row[0];
-      var timestamp = +new Date(row[1]);
-      var latency = row[2];
+  var maxTimestamp = Math.max.apply(Math, rawData.map(function(row) {
+    return row.timestamp;
+  }));
 
-      if(typeof maxLatency == "undefined" || maxLatency < latency) {
-        maxLatency = latency;
-      }
+  var minTimestamp = Math.min.apply(Math, rawData.map(function(row) {
+    return row.timestamp;
+  }));
 
-      if(typeof minTimestamp == "undefined" || minTimestamp > timestamp) {
-        minTimestamp = timestamp;
-      }
+  var hosts = {};
 
-      if(typeof maxTimestamp == "undefined" || maxTimestamp < timestamp) {
-        maxTimestamp = timestamp;
-      }
+  rawData.forEach(function(row) {
+    var series = hosts[row.host];
+    if(!series) {
+      series = hosts[row.host] = [];
+    }
 
-      var series = hosts[host];
-      if(!series) {
-        series = hosts[host] = [];
-      }
+    series.push({ x: row.timestamp, y: row.latency });
+  });
 
-      series.push({ x: timestamp, y: latency });
-    });
-
-    var d3data = Object.keys(hosts).map(function(host) {
-      return { key: host, values: hosts[host] };
-    });
-
-    return {
-      d3data:       d3data,
-      maxLatency:   maxLatency,
-      minTimestamp: minTimestamp,
-      maxTimestamp: maxTimestamp
-    };
-  }
+  var d3data = Object.keys(hosts).map(function(host) {
+    return { key: host, values: hosts[host] };
+  });
 
   nv.addGraph(function() {
-    var analyzedData = analyzeRawData();
-
     var chart =
       nv.models.lineChart()
         .margin({ left: 100 })
@@ -89,11 +75,12 @@
       .axisLabel("Latency (ms)")
       .tickFormat(d3.format(".02f"));
 
-    chart.forceY([0, analyzedData.maxLatency]);
+    chart.forceY([0, maxLatency]);
 
-    d3.select("#chart svg").datum(analyzedData.d3data).call(chart);
+    d3.select("#chart svg").datum(d3data).call(chart);
 
     nv.utils.windowResize(function() { chart.update() });
   });
+})();
 </script>
 </html>
