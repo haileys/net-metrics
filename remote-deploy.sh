@@ -12,5 +12,11 @@ set -ex
     bundle --local
 )
 
+(
+    cd frontend
+    bundle --local --without development
+)
+
 systemctl daemon-reload
 systemctl restart net-metrics-collector.service
+systemctl restart net-metrics-frontend.service
