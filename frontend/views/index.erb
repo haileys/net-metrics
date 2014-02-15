@@ -1,7 +1,29 @@
 <%
-  results = $db.query(<<-SQL, :as => :array)
+  periods = {
+    "last_hour" => {
+      title: "Last Hour",
+      interval: "1 HOUR",
+      time_format: "%H:%M",
+    },
+    "last_day" => {
+      title: "Last Day",
+      interval: "1 DAY",
+      time_format: "%H:%M",
+    },
+    # uncomment when we have a week's worth of data:
+    #
+    # "last_week" => {
+    #   title: "Last Week",
+    #   interval: "1 WEEK",
+    #   time_format: "%a %H:%M",
+    # },
+  }
+
+  current_period = periods[request.params["period"]] || periods["last_hour"]
+
+  results = $db.query(<<-SQL % current_period, :as => :array)
     SELECT host, created_at, latency FROM ping_stats
-    WHERE created_at BETWEEN UTC_TIMESTAMP() - INTERVAL 1 DAY AND UTC_TIMESTAMP()
+    WHERE created_at BETWEEN UTC_TIMESTAMP() - INTERVAL %{interval} AND UTC_TIMESTAMP()
   SQL
 %>
 <!DOCTYPE html>
@@ -12,12 +34,51 @@
   <script src="//cdnjs.cloudflare.com/ajax/libs/nvd3/1.1.14-beta/nv.d3.min.js"></script>
   <link href="//cdnjs.cloudflare.com/ajax/libs/nvd3/1.1.14-beta/nv.d3.css" rel="stylesheet" />
   <style>
+    body {
+      font-family:"Trebuchet MS", sans-serif;
+    }
     #chart svg {
       height:600px;
+    }
+    .periods {
+      height:24px;
+      display:block;
+      list-style:none;
+    }
+    .periods li {
+      display:block;
+      float:left;
+      height:24px;
+      width:100px;
+      margin-right:12px;
+    }
+    .periods li a {
+      display:block;
+      border:1px solid #ababab;
+      width:98px;
+      height:22px;
+      line-height:22px;
+      text-align:center;
+      font-size:14px;
+      color:#666666;
+      text-decoration:none;
+    }
+    .periods li a:hover, .periods li.selected a {
+      border-color:#000000;
+      background-color:#666666;
+      color:#ffffff;
     }
   </style>
 </head>
 <body>
+  <ul class="periods">
+    <% periods.each do |period_key, period| %>
+      <li class="<%= period == current_period ? "selected" : "" %>">
+        <a href="?period=<%= period_key %>"><%= period[:title] %></a>
+      </li>
+    <% end %>
+  </ul>
+
   <div id="chart"><svg></svg></div>
 </body>
 <script>
@@ -63,7 +124,7 @@
         .showYAxis(true)
         .showXAxis(true);
 
-    var timeFormat = d3.time.format("%H:%M");
+    var timeFormat = d3.time.format("<%= current_period[:time_format] %>");
 
     chart.xAxis
       .axisLabel("Date/Time")
