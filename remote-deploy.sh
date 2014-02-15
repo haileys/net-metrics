@@ -11,3 +11,6 @@ set -ex
     cd collector
     bundle --local
 )
+
+systemctl daemon-reload
+systemctl restart net-metrics-collector.service
