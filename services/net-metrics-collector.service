@@ -7,4 +7,4 @@ User=nobody
 Group=nobody
 Type=simple
 ExecStart=/opt/net-metrics/checkout/collector/run.sh
-ExecReload=/usr/bin/kill -TERM $MAINPID
+ExecStop=/usr/bin/kill -TERM $MAINPID
