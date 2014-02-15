@@ -3,8 +3,8 @@ Description=net-metrics-collector
 After=network.target
 
 [Service]
-User=root
-Group=root
+User=nobody
+Group=nobody
 Type=simple
 ExecStart=/opt/net-metrics/checkout/collector/run.sh
 ExecReload=/usr/bin/kill -TERM $MAINPID
