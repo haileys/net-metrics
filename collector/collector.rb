@@ -29,15 +29,13 @@ end
 while running
   datapoint = queue.deq
 
-  mysql.query(<<-"SQL")
-    INSERT INTO ping_stats (
-      host,
-      created_at,
-      latency
-    ) VALUES (
-      "#{mysql.escape(datapoint.host)}",
-      UTC_TIMESTAMP(),
-      "#{datapoint.latency.to_i}"
-    )
+  params = {
+    host: mysql.escape(datapoint.host),
+    latency: datapoint.latency.to_i
+  }
+
+  mysql.query(<<-"SQL" % params)
+    INSERT INTO ping_stats (host, created_at, latency)
+    VALUES ("%{host}", UTC_TIMESTAMP(), %{latency})
   SQL
 end
