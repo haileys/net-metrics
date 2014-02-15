@@ -37,7 +37,7 @@ end
 run ->env {
   request = Rack::Request.new(env)
 
-  if template_name = routes[request.fullpath]
+  if template_name = routes[request.path]
     template = TEMPLATES[template_name]
     [200, {"Content-Type" => "text/html"}, [template.call(request)]]
   else
