@@ -1,0 +1,10 @@
+[Unit]
+Description=net-metrics-collector
+After=network.target
+
+[Service]
+User=root
+Group=root
+Type=simple
+ExecStart=/opt/net-metrics/checkout/collector/run.sh
+ExecReload=/usr/bin/kill -TERM $MAINPID
