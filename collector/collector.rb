@@ -20,8 +20,15 @@ worker_threads = config["ping_hosts"].map { |host|
   end
 }
 
-loop do
+running = true
+
+trap "TERM" do
+  running = false
+end
+
+while running
   datapoint = queue.deq
+
   mysql.query(<<-"SQL")
     INSERT INTO ping_stats (
       host,
