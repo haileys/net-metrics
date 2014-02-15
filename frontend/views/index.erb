@@ -1,0 +1,99 @@
+<%
+  results = $db.query(<<-SQL, :as => :array)
+    SELECT host, created_at, latency FROM ping_stats
+    WHERE created_at BETWEEN UTC_TIMESTAMP() - INTERVAL 1 DAY AND UTC_TIMESTAMP()
+  SQL
+%>
+<!DOCTYPE html>
+<html>
+<head>
+  <title>net-metrics</title>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.4.1/d3.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/nvd3/1.1.14-beta/nv.d3.min.js"></script>
+  <link href="//cdnjs.cloudflare.com/ajax/libs/nvd3/1.1.14-beta/nv.d3.css" rel="stylesheet" />
+  <style>
+    #chart svg {
+      height:600px;
+    }
+  </style>
+</head>
+<body>
+  <div id="chart"><svg></svg></div>
+</body>
+<script id="data"><%= results.to_a.to_json %></script>
+<script>
+  function analyzeRawData() {
+    var hosts = {};
+    var rawData = JSON.parse(document.getElementById("data").innerText);
+
+    var maxLatency, minTimestamp, maxTimestamp;
+
+    rawData.forEach(function(row) {
+      var host = row[0];
+      var timestamp = +new Date(row[1]);
+      var latency = row[2];
+
+      if(typeof maxLatency == "undefined" || maxLatency < latency) {
+        maxLatency = latency;
+      }
+
+      if(typeof minTimestamp == "undefined" || minTimestamp > timestamp) {
+        minTimestamp = timestamp;
+      }
+
+      if(typeof maxTimestamp == "undefined" || maxTimestamp < timestamp) {
+        maxTimestamp = timestamp;
+      }
+
+      var series = hosts[host];
+      if(!series) {
+        series = hosts[host] = [];
+      }
+
+      series.push({ x: timestamp, y: latency });
+    });
+
+    var d3data = Object.keys(hosts).map(function(host) {
+      return { key: host, values: hosts[host] };
+    });
+
+    return {
+      d3data:       d3data,
+      maxLatency:   maxLatency,
+      minTimestamp: minTimestamp,
+      maxTimestamp: maxTimestamp
+    };
+  }
+
+  nv.addGraph(function() {
+    var analyzedData = analyzeRawData();
+
+    var chart =
+      nv.models.lineChart()
+        .margin({ left: 100 })
+        .useInteractiveGuideline(true)
+        .transitionDuration(350)
+        .showLegend(true)
+        .showYAxis(true)
+        .showXAxis(true);
+
+    var timeFormat = d3.time.format("%H:%M");
+
+    chart.xAxis
+      .axisLabel("Date/Time")
+      .tickFormat(function(d) {
+        return timeFormat(new Date(d));
+      });
+
+    chart.yAxis
+      .axisLabel("Latency (ms)")
+      .tickFormat(d3.format(".02f"));
+
+    chart.forceY([0, analyzedData.maxLatency]);
+
+    d3.select("#chart svg").datum(analyzedData.d3data).call(chart);
+
+    nv.utils.windowResize(function() { chart.update() });
+  });
+</script>
+</html>
