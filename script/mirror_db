@@ -1,0 +1,1 @@
+mysqldump -P 1337 -u root net_metrics | mysql -u root -B net_metrics
