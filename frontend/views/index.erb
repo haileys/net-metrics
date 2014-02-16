@@ -4,13 +4,19 @@
       title: "Last Hour",
       interval: "1 HOUR",
       time_format: "%H:%M",
-      aggregate: 10,
+      sql: <<-SQL,
+        SELECT host, created_at, latency FROM ping_stats
+        WHERE created_at BETWEEN UTC_TIMESTAMP() - INTERVAL 1 HOUR AND UTC_TIMESTAMP()
+      SQL
     },
     "last_day" => {
       title: "Last Day",
       interval: "1 DAY",
       time_format: "%H:%M",
-      aggregate: 4 * 60,
+      sql: <<-SQL,
+        SELECT host, created_at, latency_sum / latency_samples FROM aggregated_stats_5_min
+        WHERE created_at BETWEEN UTC_TIMESTAMP() - INTERVAL 1 DAY AND UTC_TIMESTAMP()
+      SQL
     },
     # uncomment when we have a week's worth of data:
     #
@@ -24,15 +30,12 @@
 
   current_period = periods[request.params["period"]] || periods["last_hour"]
 
-  query = "SELECT host, created_at, avg(latency) FROM ping_stats\n" +
-          "WHERE created_at BETWEEN UTC_TIMESTAMP() - INTERVAL #{current_period[:interval]} AND UTC_TIMESTAMP()\n"
+  query = current_period[:sql].gsub(/^\s+/, "")
 
   if request.params["hosts"]
     hosts = request.params["hosts"].split(",")
     query << "AND host IN (" << hosts.map { |host| "'#{$db.escape(host.to_s)}'" }.join(", ") << ")\n"
   end
-
-  query << "GROUP BY host, FLOOR(UNIX_TIMESTAMP(created_at) / #{current_period[:aggregate]})\n"
 
   before_query = Time.now.to_f
   results = $db.query(query, :as => :array)
