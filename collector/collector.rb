@@ -3,7 +3,11 @@ require "mysql2"
 require "yaml"
 require "thread"
 
-Datapoint = Struct.new(:host, :latency)
+class Datapoint < Struct.new(:host, :latency, :time)
+  def initialize(host, latency)
+    super(host, latency, Time.now)
+  end
+end
 
 config = YAML.load_file(File.expand_path("config.yml", __dir__))
 mysql = Mysql2::Client.new(config["mysql"])
@@ -29,13 +33,14 @@ end
 while running
   datapoint = queue.deq
 
-  params = {
-    host: mysql.escape(datapoint.host),
-    latency: datapoint.latency.to_i
+  row = {
+    host:       mysql.escape(datapoint.host),
+    created_at: mysql.escape(datapoint.time.strftime("%Y-%m-%d %H:%M:%S")),
+    latency:    datapoint.latency.to_i,
   }
 
-  mysql.query(<<-"SQL" % params)
+  mysql.query(<<-"SQL" % row)
     INSERT INTO ping_stats (host, created_at, latency)
-    VALUES ("%{host}", UTC_TIMESTAMP(), %{latency})
+    VALUES ("%{host}", "%{created_at}", %{latency})
   SQL
 end
